@@ -79,6 +79,12 @@ You can use echo (without newline using `-n` option) and send it to your `/dev/u
 
     echo -n 0114821482741248621486812964862890helloworld > /dev/udp/127.0.0.1/9000
 
+### Use tcpdump to sniff packets
+
+To capture UDP packets on the loopback interface with destination port 9001, use:
+
+    tcpdump -i lo0 -nX udp dst port 9001
+
 ### Opening a TUN interface in py
 
 https://gist.github.com/glacjay/585369

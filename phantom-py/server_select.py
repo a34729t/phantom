@@ -46,7 +46,8 @@ class Server:
         if self.pipe_test:
             log.debug("Opening pipe="+self.pipe_test+" for IPC with test harness")
             fifo = os.open(self.pipe_test, os.O_RDWR)
-            inputs.append(fifo)
+            if udpport == 9000:
+                inputs.append(fifo)
         
         while inputs:
             readable, writable, exceptional = select.select(inputs, outputs, inputs)

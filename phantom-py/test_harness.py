@@ -114,8 +114,8 @@ def main():
     print "Sending data one way over tunnel..."
     
     queue = Queue() # this where output goes
-    num_msg = 5 # number of messages to send over tunnel
-    rate = 0.1
+    num_msg = 20 # number of messages to send over tunnel
+    rate = 0.025
     p_tx = Process(target=tx_pipe, args=(pipe0, queue, num_msg, rate))
     p_rx = Process(target=rx_pipe, args=(pipe1, queue))
     p_rx.start()

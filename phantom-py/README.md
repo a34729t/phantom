@@ -35,14 +35,16 @@ Send a message from test port to the tunnel (from first to second instance):
 - Use the setup process to construct a basic, unencrypted UDP tunnel
 - Use a named pipe to simulate the TUN interface and communicate with the test harness
 - Added logging
+- Write a simple test harness to send data through the tunnel (and receive it)
 
 TODO:
+### v0.2 - Use TUN interface
+- make sample tun/udp code work properly
+- write a test script for the sample tun/udp code that inits the tun interfaces and closes them
+- integrate tun stuff into main code and modify test harness accordingly
+- try testing data throughput --> 10mbps
 
-- Write a simple test harness to send data through the tunnel (and receive it)
-- Look into using a LoggerAdapter to add the process name to log output
-
-### v0.2 - Expand the test harness functionality
-
+### v0.3 - Expand the test harness functionality
 - other instance attempts to open up a tunnel when there already is a tunnel established
 - other instance is not there in the first place (no connection in first place)
 - other instance goes down during setup process
@@ -50,7 +52,7 @@ TODO:
 - own instance goes down during setup
 - own instance goes down during tunnel mode
 
-### v0.3 - Encrypted tunnel between two instances with key generation, nonces, etc
+### v0.4 - Encrypted tunnel between two instances with key generation, nonces, etc
 
 - Figure out a mock DHT/public key database, possibly a little node.js json service on LAN
 - Add NaCL key exchange to tunnel setup
@@ -115,3 +117,7 @@ http://stackoverflow.com/questions/1966863/level-vs-edge-trigger-network-event-m
 http://stackoverflow.com/questions/13848143/is-level-triggered-or-edge-triggered-more-performant?rq=1
 
 The bottom line is there's very little info on this and people aren't sure what the kernel behavior really is, or at least maybe only a few people do, for UDP sockets. In the OpenSSL discussion, someone suggested using edge-triggered, but who knows if that makes a difference. This would be something to experiment with in the future.
+
+### Installing Scapy
+
+https://gist.github.com/benhagen/5257516

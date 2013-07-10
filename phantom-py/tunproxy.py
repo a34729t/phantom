@@ -20,7 +20,6 @@
 
 # I have made minor modifications to this script with respect to the way it
 # creates the virtual network interface.
-
 # To use:
 # sudo python2.7 tunproxy.py -s 9000 -t /dev/tap0 -i 10.0.0.1/24
 # sudo python2.7 tunproxy.py  -c 127.0.0.1:9000 -t /dev/tap1 -i 10.0.0.2/24
@@ -74,16 +73,14 @@ for opt,optarg in opts[0]:
 if MODE == 0:
     usage(1)
 
-# Open tun/tap device (OSX)
-f = os.open(TUNPATH, os.O_RDWR)
-
-# Linux:
-# https://gist.github.com/glacjay/585369
-# or
-# f = os.open(TUNPATH, os.O_RDWR)
-# ifs = ioctl(f, TUNSETIFF, struct.pack("16sH", "toto%d", IFF_TAP))
-# ifname = ifs[:16].strip("\x00")
-# print "Allocated interface %s. Configure it and use it" % ifname
+f = None
+os_name = os.uname()[0] # Get OS
+if os_name == 'Darwin':
+    f = os.open(TUNPATH, os.O_RDWR)
+else: # Linux
+    f = os.open('/dev/net/tun', os.O_RDWR)
+    ifr = struct.pack('16sH', TUNPATH, IFF_TAP | IFF_NO_PI)
+    fcntl.ioctl(tun, TUNSETIFF, ifr)
 
 # Assign an IP to tun/tap device
 device_name = TUNPATH.split('/')[-1]

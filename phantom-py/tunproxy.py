@@ -24,7 +24,7 @@
 # sudo python2.7 tunproxy.py -s 9000 -t /dev/tap0 -i 10.0.0.1/24
 # sudo python2.7 tunproxy.py  -c 127.0.0.1:9000 -t /dev/tap1 -i 10.0.0.2/24
 
-import os, sys
+import os, sys, fcntl
 from socket import *
 from fcntl import ioctl
 from select import select
@@ -37,6 +37,7 @@ TUNSETIFF = 0x400454ca # Linux
 TUNSETIFF = 2147775584 # OSX
 IFF_TUN   = 0x0001
 IFF_TAP   = 0x0002
+IFF_NO_PI = 0x1000
 
 TUNMODE = IFF_TAP
 MODE = 0
@@ -80,7 +81,7 @@ if os_name == 'Darwin':
 else: # Linux
     f = os.open('/dev/net/tun', os.O_RDWR)
     ifr = struct.pack('16sH', TUNPATH, IFF_TAP | IFF_NO_PI)
-    fcntl.ioctl(tun, TUNSETIFF, ifr)
+    fcntl.ioctl(f, TUNSETIFF, ifr)
 
 # Assign an IP to tun/tap device
 device_name = TUNPATH.split('/')[-1]

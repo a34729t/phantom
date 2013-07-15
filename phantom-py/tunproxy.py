@@ -20,9 +20,32 @@
 
 # I have made minor modifications to this script with respect to the way it
 # creates the virtual network interface.
-# To use:
+#
+# To test the system, open up four terminal windows, and start tunproxy in
+# server mode, attached to tap0, tunproxy in client mode, attached to tap1,
+# run my testserver.js node.js script running on port 4001 (also local), or
+# an http server/service of your choice. Finall, you can do a curl against
+# the http server over the tunnel, by aiming at the tap interface on one side
+# of the tunnel, and the ip address on the other.
+#
+# server(tap0, 10.0.0.1) <-> UDP tunnel <-> client(tap1, 10.0.0.2)
+#
+# Here's the commands to run
+#
 # sudo python2.7 tunproxy.py -s 9000 -t /dev/tap0 -i 10.0.0.1/24
 # sudo python2.7 tunproxy.py  -c 127.0.0.1:9000 -t /dev/tap1 -i 10.0.0.2/24
+# node testserver.js
+# curl --interface tap0 10.0.0.2:4001
+#
+# NOTE 0: The client crashes sometimes when you start it. Restart the server
+# and try again.
+#
+# NOTE 1: If you look at the console output of the tunproxy client and server,
+# you'll see lots of local network traffic across the tunnel, itunes, osx stuff,
+# etc. I've verified this with tcpdump:
+# (tcpdump -i lo0 -nX udp dst port [client port]). 
+#
+# TODO: Investigate local traffic going onto tunnel (NOTE 1).
 
 import os, sys, fcntl
 from socket import *
@@ -30,6 +53,8 @@ from fcntl import ioctl
 from select import select
 import getopt, struct
 import subprocess
+from scapy.all import IP # Packet sniffing
+# see http://stackoverflow.com/questions/13035220/interfacing-with-tun-tap-for-mac-osx-lion-using-python?lq=1
 
 MAGIC_WORD = "Wazaaaaaaaaaaahhhh !"
 
@@ -111,9 +136,16 @@ try:
         r = select([f,s],[],[])[0][0]
         if r == f:
             if DEBUG: os.write(1,">")
-            s.sendto(os.read(f,1500),peer)
+            packet_from_os = os.read(f,1500)
+            #print "from vni:", packet_from_os
+            #ip = IP(packet_from_os)
+            #ip.show()
+            s.sendto(packet_from_os,peer)
         else:
             buf,p = s.recvfrom(1500)
+            print "from sock:", buf
+            # ip = IP(buf)
+            # ip.show()
             if p != peer:
                 print "Got packet from %s:%i instead of %s:%i" % (p+peer)
                 continue

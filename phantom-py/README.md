@@ -1,7 +1,7 @@
 # Python Prototype
 =======
 
-## Usage
+## Usage of the main app (phantom.py)
 
 Currently, we can build an unencrypted tunnel between two instances and forward UDP data over the tunnel.
 
@@ -24,6 +24,26 @@ Send a message from test port to the tunnel (from first to second instance):
 
     echo -n hello world > /dev/udp/127.0.0.1/8000
 
+## Usage of the example app (tunproxy.py) - Building a local UDP tunnel
+
+I have made some modifications to Philippe Biondi's script to make it work on OSX and to avoid having to externally assign a virtual network interface and ip address.
+
+To test the system, open up four terminal windows, and start tunproxy in server mode, attached to tap0, tunproxy in client mode, attached to tap1, run my testserver.js node.js script running on port 4001 (also local), or an http server/service of your choice. Finall, you can do a curl against the http server over the tunnel, by aiming at the tap interface on one side of the tunnel, and the ip address on the other.
+
+    server(tap0, 10.0.0.1) <-> UDP tunnel <-> client(tap1, 10.0.0.2)
+
+Here's the commands to run
+
+    sudo python2.7 tunproxy.py -s 9000 -t /dev/tap0 -i 10.0.0.1/24
+    sudo python2.7 tunproxy.py  -c 127.0.0.1:9000 -t /dev/tap1 -i 10.0.0.2/24
+    node testserver.js
+    curl --interface tap0 10.0.0.2:4001
+
+### Notes
+
+* The client crashes sometimes when you start it. Restart the server and try again.
+* If you look at the console output of the tunproxy client and server, you'll see lots of local network traffic across the tunnel, itunes, osx stuff, etc. I've verified this with `tcpdump -i lo0 -nX udp dst port [client port]`. 
+
 ## Status
 
 ### v0.1 - Unencrypted tunnel between two instances
@@ -37,10 +57,14 @@ Send a message from test port to the tunnel (from first to second instance):
 - Added logging
 - Write a simple test harness to send data through the tunnel (and receive it)
 
-TODO:
 ### v0.2 - Use TUN interface
 - make sample tun/udp code work properly
-- write a test script for the sample tun/udp code that inits the tun interfaces and closes them
+- make sample code build a local tunnel
+
+TODO:
+### v0.2 - Use TUN interface
+- figure out why local traffic goes onto the local tunnel
+- think about privilege separation so we don't need to give the main app root access 
 - integrate tun stuff into main code and modify test harness accordingly
 - try testing data throughput --> 10mbps
 

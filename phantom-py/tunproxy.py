@@ -150,7 +150,8 @@ try:
                 print "Got packet from %s:%i instead of %s:%i" % (p+peer)
                 continue
             if DEBUG: os.write(1,"<")
-            os.write(f, buf)
+            if f: # make sure tun is up when we write
+                os.write(f, buf)
 
 except KeyboardInterrupt:
     os.close(f)

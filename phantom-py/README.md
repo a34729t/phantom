@@ -46,9 +46,9 @@ We can also run `tunproxy.py` as server on a separate machine (or VM), let's say
     local$ sudo python2.7 tunproxy.py  -c 10.0.1.24:9000 -t /dev/tap1 -i 10.0.0.2/24
     local$ curl 10.0.0.1:4001
 
-### Notes
+### OSX Note
 
-* If you look at the console output of the tunproxy client and server, you'll see lots of local network traffic across the tunnel, itunes, osx stuff, etc. I've verified this with `tcpdump -i lo0 -nX udp dst port [client port]`. 
+* On OSX, Bonjour announces all sort of stuff on the local network on port 5353, among other things. Feel the pain with `tcpdump -i tap1 -nX udp dst port 5353`. To see all the other non-Bonjour traffic, filter out port 5353 with `tcpdump -i tap1 -nX not udp dst port 5353`.
 
 ## Status
 
@@ -66,12 +66,12 @@ We can also run `tunproxy.py` as server on a separate machine (or VM), let's say
 ### v0.2 - Use TUN interface
 - make sample tun/udp code work properly
 - make sample code build a local tunnel
+- figure out why local traffic goes onto the local tunnel
 
 TODO:
 ### v0.2 - Use TUN interface
-- figure out why local traffic goes onto the local tunnel
-- think about privilege separation so we don't need to give the main app root access 
 - integrate tun stuff into main code and modify test harness accordingly
+- think about privilege separation so we don't need to give the main app root access 
 - try testing data throughput --> 10mbps
 
 ### v0.3 - Expand the test harness functionality

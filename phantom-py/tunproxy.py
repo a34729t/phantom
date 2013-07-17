@@ -107,6 +107,7 @@ else: # Linux
     f = os.open('/dev/net/tun', os.O_RDWR)
     ifr = struct.pack('16sH', TUNPATH, IFF_TAP | IFF_NO_PI)
     fcntl.ioctl(f, TUNSETIFF, ifr)
+    fcntl.ioctl(tun, TUNSETOWNER, 1000)
 
 # Assign an IP to tun/tap device
 device_name = TUNPATH.split('/')[-1]
@@ -114,6 +115,7 @@ subprocess.check_call('ifconfig '+device_name+' '+device_ip, shell=True)
 
 
 s = socket(AF_INET, SOCK_DGRAM)
+# maybe set it to O_NONBLOCK
 
 try:
     if MODE == 1:

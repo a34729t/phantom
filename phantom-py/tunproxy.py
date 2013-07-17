@@ -59,7 +59,7 @@ from scapy.all import IP # Packet sniffing
 MAGIC_WORD = "Wazaaaaaaaaaaahhhh !"
 
 TUNSETIFF = 0x400454ca # Linux
-TUNSETIFF = 2147775584 # OSX
+# TUNSETIFF = 2147775584 # OSX
 IFF_TUN   = 0x0001
 IFF_TAP   = 0x0002
 IFF_NO_PI = 0x1000
@@ -107,7 +107,7 @@ else: # Linux
     f = os.open('/dev/net/tun', os.O_RDWR)
     ifr = struct.pack('16sH', TUNPATH, IFF_TAP | IFF_NO_PI)
     fcntl.ioctl(f, TUNSETIFF, ifr)
-    fcntl.ioctl(tun, TUNSETOWNER, 1000)
+# fcntl.ioctl(tun, TUNSETOWNER, 1000)
 
 # Assign an IP to tun/tap device
 device_name = TUNPATH.split('/')[-1]

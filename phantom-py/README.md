@@ -38,10 +38,16 @@ Here's the commands to run
     sudo python2.7 tunproxy.py  -c 127.0.0.1:9000 -t /dev/tap1 -i 10.0.0.2/24
     node testserver.js
     curl --interface tap0 10.0.0.2:4001
+    
+We can also run `tunproxy.py` as server on a separate machine (or VM), let's say the ip is 10.0.1.24:
+
+    server$ node testserver.js
+    server$ sudo python2.7 tunproxy.py -s 9000 -t tunX -i 10.0.0.1/24
+    local$ sudo python2.7 tunproxy.py  -c 10.0.1.24:9000 -t /dev/tap1 -i 10.0.0.2/24
+    local$ curl 10.0.0.1:4001
 
 ### Notes
 
-* The client crashes sometimes when you start it. Restart the server and try again.
 * If you look at the console output of the tunproxy client and server, you'll see lots of local network traffic across the tunnel, itunes, osx stuff, etc. I've verified this with `tcpdump -i lo0 -nX udp dst port [client port]`. 
 
 ## Status

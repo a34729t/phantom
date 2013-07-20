@@ -50,6 +50,22 @@ We can also run `tunproxy.py` as server on a separate machine (or VM), let's say
 
 * On OSX, Bonjour announces all sort of stuff on the local network on port 5353, among other things. Feel the pain with `tcpdump -i tap1 -nX udp dst port 5353`. To see all the other non-Bonjour traffic, filter out port 5353 with `tcpdump -i tap1 -nX not udp dst port 5353`.
 
+### Using the IPFW Firewall in OSX to block unwanted traffic on tunnel
+
+Here we add a rule (with id=9000) that stops all outgoing traffic over our virtual network interface:
+
+    sudo ipfw add 9000 deny out via tap1
+    
+We want a rule that allow tcp/udp traffic on a limited basis, and block all other IP traffic. We could go further and only allow several ports, but the basic setup is as follows:
+  
+    09000 allow tcp from any to any via [tap_interface_name]
+    09001 allow udp from any to any via [tap_interface_name]
+    09002 deny ip from any to any via [tap_interface_name] # block all other incoming and outboung traffic
+    
+And we can also delete the rules:
+
+    sudo ipfw del 9000 9001 9002
+
 ## Status
 
 ### v0.1 - Unencrypted tunnel between two instances
@@ -70,6 +86,8 @@ We can also run `tunproxy.py` as server on a separate machine (or VM), let's say
 
 TODO:
 ### v0.2 - Use TUN interface
+- QUESTION: Does turning off `ifconfig` multicast stop all the traffic?
+- QUESTION: How do I figure out the destination of the ethernet packet?
 - integrate tun stuff into main code and modify test harness accordingly
 - think about privilege separation so we don't need to give the main app root access 
 - try testing data throughput --> 10mbps

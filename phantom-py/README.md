@@ -58,9 +58,8 @@ Here we add a rule (with id=9000) that stops all outgoing traffic over our virtu
     
 We want a rule that allow tcp/udp traffic on a limited basis, and block all other IP traffic. We could go further and only allow several ports, but the basic setup is as follows:
   
-    09000 allow tcp from any to any via [tap_interface_name]
-    09001 allow udp from any to any via [tap_interface_name]
-    09002 deny ip from any to any via [tap_interface_name] # block all other incoming and outboung traffic
+    sudo ipfw add 9000 allow tcp from any to any via tap1
+    sudo ipfw add 9002 deny ip from any to any via tap1 # block all other incoming and outboung traffic
     
 And we can also delete the rules:
 
@@ -83,11 +82,13 @@ And we can also delete the rules:
 - make sample tun/udp code work properly
 - make sample code build a local tunnel
 - figure out why local traffic goes onto the local tunnel
+- figure out how to use ipfw firewall on OSX
+- create app internal firewall `firewall.py`
 
 TODO:
+- make app firewall allow ARP, TCP, UDP, ICMP but block other stuff
+
 ### v0.2 - Use TUN interface
-- QUESTION: Does turning off `ifconfig` multicast stop all the traffic?
-- QUESTION: How do I figure out the destination of the ethernet packet?
 - integrate tun stuff into main code and modify test harness accordingly
 - think about privilege separation so we don't need to give the main app root access 
 - try testing data throughput --> 10mbps

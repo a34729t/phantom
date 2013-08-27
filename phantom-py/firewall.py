@@ -39,6 +39,7 @@ class Firewall:
         print "filter_outbound:", "protocol=", protocol, "src_port=", src_port, "dst_port=", dst_port
         
         # TODO: Don't block ARP packets, which are a different format than the other stuff we expect
+        # See: https://en.wikipedia.org/wiki/Ethertype
         if arp_packet(frame):
             return True
         elif protocol in allowed_protocols:

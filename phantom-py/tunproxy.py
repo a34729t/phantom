@@ -54,6 +54,7 @@ from select import select
 import getopt, struct
 import subprocess
 from scapy.all import IP # Packet sniffing
+from firewall import Firewall
 # see http://stackoverflow.com/questions/13035220/interfacing-with-tun-tap-for-mac-osx-lion-using-python?lq=1
 
 MAGIC_WORD = "Wazaaaaaaaaaaahhhh !"
@@ -113,6 +114,7 @@ else: # Linux
 device_name = TUNPATH.split('/')[-1]
 subprocess.check_call('ifconfig '+device_name+' '+device_ip, shell=True)
 
+firewall = Firewall()
 
 s = socket(AF_INET, SOCK_DGRAM)
 # maybe set it to O_NONBLOCK
@@ -138,11 +140,10 @@ try:
         r = select([f,s],[],[])[0][0]
         if r == f:
             if DEBUG: os.write(1,">")
-            packet_from_os = os.read(f,1500)
-            #print "from vni:", packet_from_os
-            #ip = IP(packet_from_os)
-            #ip.show()
-            s.sendto(packet_from_os,peer)
+            packet = os.read(f,1500)
+            Firewall.examine(packet)
+            if firewall.filter_outbound(packet): # TODO: Don't block ARP packets!
+                s.sendto(packet,peer)
         else:
             buf,p = s.recvfrom(1500)
             print "from sock:", buf

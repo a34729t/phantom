@@ -1,0 +1,52 @@
+{
+	"A" :
+	{
+		"ip_addr" : "10.0.0.1",
+		"port" : 8001,
+		"path_building_key" : "d39daddfd583f685aac5b628ef3be58b662ac37b1eb3745d4a720314cf4cc9f0",
+		"path_building_certificate" : "c74e6b96ce6387a2398527983915dd989cd6f9fcbb1c5a18a5f13e1c31da0e43"
+	},
+	
+	"B" :
+	{
+		"ip_addr" : "10.0.0.2",
+		"port" : 8002,
+		"path_building_key" : "20d13f51155554d4acb37a4cfefde9f060039c9efb350bda0e5a5bef4cd24fb7",
+		"path_building_certificate" : "26cb74365441bfaf4ee76e679afc05c47bc523d2f8333a41ee8336e9ef416f07"
+	},
+	
+	"C" :
+	{
+		"ip_addr" : "10.0.0.3",
+		"port" : 8003,
+		"path_building_key" : "94582d54b2867c15f1e074891bd88b2f5a341f170fb95f73b3011ec0c5156b81",
+		"path_building_certificate" : "461bf90d4fa8af51302bea7681395f21272599cf0f924e1cdedba83c59c7b161"
+	},
+	
+	"D" :
+	{
+		"ip_addr" : "10.0.0.4",
+		"port" : 8004,
+		"path_building_key" : "cdb7a2008916a391fa0a53ddc1c6afeee0ae70cfebc7729df3a161c169492bc7",
+		"path_building_certificate" : "0b8dcc43dfc1e09c913062d5d0a15e5975395fed15ee65531d250ca036032e5d"
+	},
+
+	"E" :
+	{
+		"ip_addr" : "10.0.0.5",
+		"port" : 8005,
+		"path_building_key" : "469d72b9a6a4deeac6286611927406b3cdc5a43e1c6a91c7eb12b5945bcd6954",
+		"path_building_certificate" : "adba4b0d0672e202f2ba9f2f0b0fe0336bb1af6308125cd44abc1bf0e89d0405"
+	},
+
+	"F" :
+	{
+		"ip_addr" : "10.0.0.6",
+		"port" : 8006,
+		"path_building_key" : "2bb26df6f7c2cb2329497df8ce36d1b3018f3ff5481c90d3dd54aad4a47f82b9",
+		"path_building_certificate" : "062d34bceca2f8c023b811c720b4e5af5f3d6b57184faf44a668eba53b269806"
+	},
+	
+	"_comment" : "use sk.encode(encoder=nacl.encoding.HexEncoder) and PrivateKey(txt, encoder=nacl.encoding.HexEncoder) to read"
+}
+

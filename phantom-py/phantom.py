@@ -47,14 +47,18 @@ def main():
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
     parser.add_option('-n', '--name', dest='name', default='A') # This is our DHT key - temporary!!!
-    parser.add_option('-p', '--httpport', dest='http_port', default=7000)
-    parser.add_option('-u', '--udpport', dest='udp_port', default=9000)
+    parser.add_option('-p', '--httpport', dest='http_port', default=None)
+    parser.add_option('-u', '--udpport', dest='udp_port', default=None)
     parser.add_option('-f', '--pipe', dest='pipe_test', default=None)
     (options, args) = parser.parse_args()
     
     name = options.name
-    http_port = int(options.http_port)
-    udp_port = int(options.udp_port)
+    http_port = None
+    if options.http_port:
+        http_port = int(options.http_port)
+    udp_port = None
+    if options.udp_port:
+        udp_port = int(options.udp_port)
     pipe_test = options.pipe_test # Pipe for talking to test harness
     http_ui = True
     
@@ -69,16 +73,16 @@ def main():
     p_server.start()
     
     # Choose which UI to use (http is better for testing multiple instances on same machine)
-    if http_ui:
+    if http_ui and http_port:
         p_ui = Process(target=start_ui, args=(pipe_ui, http_port))
         p_ui.start()
         p_ui.join()
         p_ui.kill()
-    else:
-        # OSX status bar version not working with python 2.7 on OSX 10.6
-        from userinterface import OSXstatusbaritem
-        OSXstatusbaritem.start(pipeUI)
-        return
+    # else:
+    #     # OSX status bar version not working with python 2.7 on OSX 10.6
+    #     from userinterface import OSXstatusbaritem
+    #     OSXstatusbaritem.start(pipeUI)
+    #     return
     
     p_server.join()
     p_server.kill()

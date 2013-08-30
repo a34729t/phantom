@@ -35,8 +35,21 @@ class Server:
         self.setup_peers = {} # setup connections this peer is attempting
         self.tunnels = {} # tunnels we are routing over our node
 
-    def listen (self, ipaddress, udpport):
-    
+    def listen (self, ipaddress, udpport):    
+        # NOTE: DHT and crypto perhaps should go in the constructor
+        
+        # Initialize the DHT and get the information for my node 
+        # in the Phantom network
+        dht_file = 'fake_dht.json'
+        dht = FakeDHT(dht_file)
+        my_node = dht.get_node(self.name)
+        if not udpport:
+            udpport = my_node.port
+        
+        # Initialize crypto factory
+        crypto_factory = CryptoFactory()
+        crypto_factory.path_building_key = my_node.path_building_key
+        
         # Set some class vars
         self.address = ipaddress
     
@@ -58,18 +71,6 @@ class Server:
             if udpport == 9000:
                 inputs.append(fifo)
         
-        # NOTE: DHT and crypto perhaps should go in the constructor
-        
-        # Initialize the DHT and get the information for my node 
-        # in the Phantom network
-        dht_file = 'fake_dht.json'
-        dht = FakeDHT(dht_file)
-        my_node = dht.get_node(self.name)
-        
-        # Initialize crypto factory
-        crypto_factory = CryptoFactory()
-        crypto_factory.path_building_key = my_node.path_building_key
-        
         while inputs:
             readable, writable, exceptional = select.select(inputs, outputs, inputs)
             
@@ -90,6 +91,10 @@ class Server:
                         path = RoutingPath(my_node, dht)
                         pkgs = path.round1_setup_packages()
                         log.debug("Creating path with nodes:"+str(path.nodes))
+                        
+                        # Send a setup message to the first node in the path
+                        target_node = path[1]
+                        sock.sendto(pkgs[0], (target_node.ip_addr, target_node.port))
                         
                     if data[0] == 'open':
                         # NOTE: For open command, data[1] and data[2] are

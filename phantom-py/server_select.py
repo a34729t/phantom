@@ -94,16 +94,13 @@ class Server:
                     if data[0] == 'open':
                         # NOTE: For open command, data[1] and data[2] are
                         # an IP address and port, respectively
-                        connId = self.generate_conn_id()
+                        connId = os.urandom(16).encode('hex')
                         msg = connId + 'setup'
                         sock.sendto(msg, (data[1], data[2]))
                         self.setup_peers[connId] = SetupInfo(data[1], data[2])
             
             # Handle exceptional?    
     
-    def generate_conn_id(self):
-        return os.urandom(16).encode('hex')
-        
     def handle_fifo (self, sock, fifo, ):
         # Send data from fifo to sock
         data = os.read(fifo, 100)

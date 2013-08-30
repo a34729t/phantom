@@ -116,8 +116,16 @@ class Server:
             peer = self.tunnels[peerId]
             msg = peerId + data
             sock.sendto(msg, (peer.address, peer.port))
-               
+
     def handle_udp (self, sock, fifo):
+        # Decide what to do with the packet:
+        (data, addr) = sock.recvfrom(1024)
+        log.debug("UDP "+str(addr)+": "+data)
+        
+        # NOTE: We may not get all the info for a setup packet as they are maybe 2400 bytes long!
+               
+    def handle_udp_old (self, sock, fifo):
+        # Deprecated old version, don't delete yet!
         # Decide what to do with the packet:
         (data, addr) = sock.recvfrom(1024)
         log.debug("UDP "+str(addr)+": "+data)

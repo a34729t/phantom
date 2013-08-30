@@ -50,7 +50,7 @@
 	"G" :
 	{
 		"ip_addr" : "10.0.0.7",
-		"port" : 8006,
+		"port" : 8007,
 		"path_building_key" : "b732e47809f8dba48a29c38a716ab4a9578b50eaa3da72228596dbbeb21be8de",
 		"path_building_certificate" : "c6861dbb1627927ce1e6e01d26506f6035627479ecad3998d5d93d22117bf706"
 	},

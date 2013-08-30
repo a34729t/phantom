@@ -16,13 +16,18 @@ class FakeDHT:
                 key_hex = db[node_name]['path_building_key']
                 node = Node(node_name, ip_addr, port, key_hex, cert_hex)
                 self.nodes[node_name] = node
-                
+    
+    def get_node(self, node_name):
+        if node_name not in self.nodes:
+            raise Exception("Unable to find node "+node_name+" in fake DHT!!!")
+        else:
+            return self.nodes[node_name]
+    
     def get_x_and_y_nodes(self, my_node, x=1, y=2):
-        my_name = my_node.name
         x_and_y_nodes = []
         prev_type = None
         for node_name in self.nodes:
-            if node_name != '_comment':
+            if node_name != '_comment' and node_name != my_node.name:
                 node = self.nodes[node_name]
                 
                 if x > 0 and prev_type == NodeTypes.Y:

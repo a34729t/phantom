@@ -6,8 +6,12 @@ from socket import socket, AF_INET, SOCK_DGRAM
 from multiprocessing import Process, Pipe
 from server_datatypes import SetupInfo, TunnelInfo
 import os
-import nacl #PyNaCl - libsodium (use my python2.7 installation)
 import logging
+
+from routingpath import RoutingPath, Node, NodeTypes
+from crypto_factory import CryptoFactory
+from dht import FakeDHT
+
 log = logging.getLogger("mylog")
 
 # Design:
@@ -15,9 +19,14 @@ log = logging.getLogger("mylog")
 # which we can build UDP tunnels
 
 class Server:
-    def __init__(self, pipe, pipe_test):
+    def __init__(self, pipe, pipe_test, name):
         self.pipe = pipe # pipe for communication with external processes (ui)
         self.pipe_test = pipe_test # pipe for communicating with test harness
+        
+        # NOTE: Temporary data for node name. We use it as the key for the fake
+        # dht lookup. I'm not really sure what will replace this! Probably a
+        # curl request to whatismyip.com or something!?
+        self.name = name
         
         # NOTE: The tunnels group of peers is a hack to make sure we can build 
         # encrypted tunnels between two nodes. Once routing path construction
@@ -49,6 +58,18 @@ class Server:
             if udpport == 9000:
                 inputs.append(fifo)
         
+        # NOTE: DHT and crypto perhaps should go in the constructor
+        
+        # Initialize the DHT and get the information for my node 
+        # in the Phantom network
+        dht_file = 'fake_dht.json'
+        dht = FakeDHT(dht_file)
+        my_node = dht.get_node(self.name)
+        
+        # Initialize crypto factory
+        crypto_factory = CryptoFactory()
+        crypto_factory.path_building_key = my_node.path_building_key
+        
         while inputs:
             readable, writable, exceptional = select.select(inputs, outputs, inputs)
             
@@ -63,6 +84,13 @@ class Server:
                     # Handle commands from the UI in the other process (IPC)
                     data = self.pipe.recv()
                     log.debug("pipe event: "+str(data))
+                    if data == 'path':
+                        # Attempt to create a routing path
+                        # NOTE: At this point we just create the first round setup packages
+                        path = RoutingPath(my_node, dht)
+                        pkgs = path.round1_setup_packages()
+                        log.debug("Creating path with nodes:"+str(path.nodes))
+                        
                     if data[0] == 'open':
                         # NOTE: For open command, data[1] and data[2] are
                         # an IP address and port, respectively
@@ -70,6 +98,7 @@ class Server:
                         msg = connId + 'setup'
                         sock.sendto(msg, (data[1], data[2]))
                         self.setup_peers[connId] = SetupInfo(data[1], data[2])
+            
             # Handle exceptional?    
     
     def generate_conn_id(self):

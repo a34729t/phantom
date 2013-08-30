@@ -26,8 +26,8 @@ streamhandler.setFormatter(formatter)
 log.addHandler(streamhandler)
 
 
-def start_server(pipe, port, pipe_test):
-    s = Server(pipe, pipe_test)
+def start_server(pipe, port, pipe_test, name):
+    s = Server(pipe, pipe_test, name)
     s.listen('127.0.0.1', port)
 
 def start_ui(pipe, HTTP_PORT):
@@ -46,11 +46,13 @@ def main():
     # Parse command line options
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
+    parser.add_option('-n', '--name', dest='name', default='A') # This is our DHT key - temporary!!!
     parser.add_option('-p', '--httpport', dest='http_port', default=7000)
     parser.add_option('-u', '--udpport', dest='udp_port', default=9000)
     parser.add_option('-f', '--pipe', dest='pipe_test', default=None)
     (options, args) = parser.parse_args()
     
+    name = options.name
     http_port = int(options.http_port)
     udp_port = int(options.udp_port)
     pipe_test = options.pipe_test # Pipe for talking to test harness
@@ -63,7 +65,7 @@ def main():
     pipe_server, pipe_ui = Pipe()
     
     # Start UDP server subprocess
-    p_server = Process(target=start_server, args=(pipe_server, udp_port, pipe_test))
+    p_server = Process(target=start_server, args=(pipe_server, udp_port, pipe_test, name))
     p_server.start()
     
     # Choose which UI to use (http is better for testing multiple instances on same machine)

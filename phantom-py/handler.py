@@ -4,7 +4,7 @@ import simplejson as json
 # Simple HTTP endpoints for controlling prototype Phantom implementation.
 # The following commands are supported:
 # 1. Open a connection via /open/[IP]:[PORT]
-# 2. ????
+# 2. Create a routing path via /path
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     pipe = None
@@ -29,6 +29,10 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             port = int(port)
             RequestHandler.pipe.send(('open', address, port))
             message = {'address': address, 'port': port}
+            self.wfile.write(json.dumps(message))
+        if self.path.startswith('/path'):
+            RequestHandler.pipe.send(('path'))
+            message = {'msg': 'attempting to open routing path'}
             self.wfile.write(json.dumps(message))
         elif self.path.startswith('/restart'):
             # print "restarting UDP subprocess"

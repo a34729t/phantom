@@ -128,6 +128,9 @@ class RoutingPath:
     def __repr__(self):
         pass
         
+    def __getitem__(self, key):
+        return self.nodes[key]
+        
     def round1_setup_packages(self):
         # Generate a bunch of setup package data (strings)
         pkgs_and_nodes = []

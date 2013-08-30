@@ -47,6 +47,14 @@
 		"path_building_certificate" : "062d34bceca2f8c023b811c720b4e5af5f3d6b57184faf44a668eba53b269806"
 	},
 	
+	"G" :
+	{
+		"ip_addr" : "10.0.0.7",
+		"port" : 8006,
+		"path_building_key" : "b732e47809f8dba48a29c38a716ab4a9578b50eaa3da72228596dbbeb21be8de",
+		"path_building_certificate" : "c6861dbb1627927ce1e6e01d26506f6035627479ecad3998d5d93d22117bf706"
+	},
+	
 	"_comment" : "use sk.encode(encoder=nacl.encoding.HexEncoder) and PrivateKey(txt, encoder=nacl.encoding.HexEncoder) to read"
 }
 

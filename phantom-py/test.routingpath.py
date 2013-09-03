@@ -178,6 +178,7 @@ def test_routing_path():
     assert plaintext == target_node.round1_setup_package()
     assert hash_pkgs == h_target
     
+    # TODO: Verify dummy packages
     
 test_dht()
 test_crypto_factory()

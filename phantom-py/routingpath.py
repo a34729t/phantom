@@ -16,7 +16,10 @@ import zlib
 # Constants, put in constants/config json file???
 n_tuples = 3
 n_seeds = 3
-# TODO: seeds and tuples in Node/Setup Package
+# TODO: seeds and tuples in Node/Setup Package --> 
+# These are for the dummy setup package creation and streaming key generation
+# though we could do streaming keys in the second round, but make the setup packages
+# the same size
 
 NodeTypes = enum(X=1, Y=2)
 crypto_factory = CryptoFactory()
@@ -82,6 +85,7 @@ class Node:
         return s
 
     def encrypt_and_sign(self, message, signing_key):
+        # print "!!encrypt_and_sign!!"
         # Encrypt the setup package:
         # 1) Asymmetrically encrypt with the path building certificate of the individual recipient node
         # 2) Symmetrically encrypt with the 128-bit ID of its incoming connection id
@@ -90,18 +94,27 @@ class Node:
         # 1)
         self.public_box = crypto_factory.public_box(self.path_building_cert)
         encrypted_1 = self.public_box.encryptn(message)
+        return encrypted_1
+        # return message
+        
+        '''
+        # NOTE: I've commented out the below as it probably only applies to the 
+        #   second round package setup
         # 2)
         self.secret_box = crypto_factory.secret_box(self.prev_id)
         encrypted_2 = self.secret_box.encryptn(encrypted_1)
         # 3)
         signed = signing_key.sign(encrypted_2)
         return signed
+        '''
+        
         
 class RoutingPath:
-    def __init__(self, my_node, dht):
+    def __init__(self, my_node, dht, length):
         self.my_node = my_node
         x_and_y_nodes = dht.get_x_and_y_nodes(my_node, 1, 2)
         self.nodes = [my_node] + x_and_y_nodes + [my_node]
+        self.length = length
         
         # Generate a signing key
         self.path_construction_key = nacl.signing.SigningKey.generate()

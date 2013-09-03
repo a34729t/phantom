@@ -94,19 +94,23 @@ def test_setup_package_creation_and_read_round1():
     pkg_plaintext = target_node.round1_setup_package()
     pkg_encrypted = target_node.encrypt_and_sign(pkg_plaintext, path.path_construction_key)
     
+    '''
+    # NOTE: I've commented out the below as it probably only applies to the 
+    #   second round package setup
     # 1) Verify signature
     pkg_verified = path.path_construction_cert.verify(pkg_encrypted)
     
     # 2) Decrypt using conn_id (symmetric)
     secret_box = crypto_factory.secret_box(target_node.prev_id)
     pkg_decrypted_secret = secret_box.decrypt(pkg_verified)
+    '''
     
     # 3) Decrypt using key of target_node and cert of my_node (asymmetric)
     public_box = Box(target_node.path_building_key, my_node.path_building_cert)
-    plaintext = public_box.decrypt(pkg_decrypted_secret)
-    assert pkg_plaintext == plaintext
+    # plaintext = public_box.decrypt(pkg_decrypted_secret)
+    plaintext = public_box.decrypt(pkg_encrypted)
     
-    pass
+    assert pkg_plaintext == plaintext
     
 def test_routing_path():
     # Initialize our node, crypto and dht
@@ -117,7 +121,7 @@ def test_routing_path():
     dht = FakeDHT(dht_file)
     
     # Create a routing path
-    path = RoutingPath(my_node, dht)
+    path = RoutingPath(my_node, dht, 3)
     
     # Verify the nodes in the new routing path are linked correctly
     # i.e. node_0 -> conn_id_0_1 -> node_1 -> conn_id_1_2 -> node_2 ...
@@ -134,7 +138,6 @@ def test_routing_path():
         
     # Create round 1 setup packages (shuffled array)
     pkgs = path.round1_setup_packages()
-    path_length = 3 # TODO: Don't hard-code this
     
     # Verify the 1st setup package is correct (assume rest are also correct)
     # TODO: This logic should be in the phantom app itself, so we use the same code
@@ -142,12 +145,13 @@ def test_routing_path():
     target_node = path.nodes[1]
     plaintext, hash_pkgs, h_target = None, None, None
     
-    for i in range(path_length):
+    for i in range(path.length):
         pkg = pkgs[i]
         try:
-            pkg_verified = target_node.path_construction_cert.verify(pkg)
-            pkg_decrypted_secret = target_node.secret_box.decrypt(pkg_verified)
-            plaintext = target_node.public_box.decrypt(pkg_decrypted_secret)
+            # pkg_verified = target_node.path_construction_cert.verify(pkg)
+            # pkg_decrypted_secret = target_node.secret_box.decrypt(pkg_verified)
+            # plaintext = target_node.public_box.decrypt(pkg_decrypted_secret)
+            plaintext = target_node.public_box.decrypt(pkg)
             
             s = None
             if i == path_length - 1:
@@ -160,12 +164,13 @@ def test_routing_path():
         except:
             pass
     
-    for h in pkgs[path_length:]:
+    for h in pkgs[path.length:]:
         # attempt to decrypt - we should get a 64 bytes sha256
         try:
-            h_verified = target_node.path_construction_cert.verify(h)
-            h_decrypted_secret = target_node.secret_box.decrypt(h_verified)
-            hash_pkgs = target_node.public_box.decrypt(h_decrypted_secret)
+            # h_verified = target_node.path_construction_cert.verify(h)
+            # h_decrypted_secret = target_node.secret_box.decrypt(h_verified)
+            # hash_pkgs = target_node.public_box.decrypt(h_decrypted_secret)
+            hash_pkgs = target_node.public_box.decrypt(h)
             break
         except:
             pass

@@ -1,4 +1,4 @@
-from routingpath2 import RoutingPath, Node, NodeTypes
+from routingpath import RoutingPath, Node, NodeTypes
 import simplejson as json
 
 class FakeDHT:

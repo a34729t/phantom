@@ -26,8 +26,8 @@ streamhandler.setFormatter(formatter)
 log.addHandler(streamhandler)
 
 
-def start_server(pipe, port, pipe_test, name):
-    s = Server(pipe, pipe_test, name)
+def start_server(name, pipe, port, pipe_test):
+    s = Server(name, pipe, pipe_test)
     s.listen('127.0.0.1', port)
 
 def start_ui(pipe, HTTP_PORT):
@@ -69,7 +69,7 @@ def main():
     pipe_server, pipe_ui = Pipe()
     
     # Start UDP server subprocess
-    p_server = Process(target=start_server, args=(pipe_server, udp_port, pipe_test, name))
+    p_server = Process(target=start_server, args=(name, pipe_server, udp_port, pipe_test))
     p_server.start()
     
     # Choose which UI to use (http is better for testing multiple instances on same machine)

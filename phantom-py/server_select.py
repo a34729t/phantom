@@ -19,21 +19,30 @@ log = logging.getLogger("mylog")
 # which we can build UDP tunnels
 
 class Server:
-    def __init__(self, pipe, pipe_test, name):
-        self.pipe = pipe # pipe for communication with external processes (ui)
-        self.pipe_test = pipe_test # pipe for communicating with test harness
-        
-        # NOTE: Temporary data for node name. We use it as the key for the fake
-        # dht lookup. I'm not really sure what will replace this! Probably a
-        # curl request to whatismyip.com or something!?
-        self.name = name
-        
-        # NOTE: The tunnels group of peers is a hack to make sure we can build 
-        # encrypted tunnels between two nodes. Once routing path construction
-        # is working, then we'll have exit, entry and intermediate peers.
-        
-        self.setup_peers = {} # setup connections this peer is attempting
-        self.tunnels = {} # tunnels we are routing over our node
+#     def __init__(self, pipe, pipe_test, name):
+#         self.pipe = pipe # pipe for communication with external processes (ui)
+#         self.pipe_test = pipe_test # pipe for communicating with test harness
+#         
+#         # NOTE: Temporary data for node name. We use it as the key for the fake
+#         # dht lookup. I'm not really sure what will replace this! Probably a
+#         # curl request to whatismyip.com or something!?
+#         self.name = name
+#         
+#         # NOTE: The tunnels group of peers is a hack to make sure we can build 
+#         # encrypted tunnels between two nodes. Once routing path construction
+#         # is working, then we'll have exit, entry and intermediate peers.
+#         
+#         self.setup_peers = {} # setup connections this peer is attempting
+#         self.tunnels = {} # tunnels we are routing over our node
+
+    def __init__(self, name, pipe=None, pipe_test=None):
+        dht_file = 'fake_dht.json'
+        self.pipe = pipe
+        self.crypto = CryptoFactory()
+        self.dht = FakeDHT(dht_file)
+        self.node = self.dht.get_node(name) # The node represented by the server
+        self.crypto.path_building_key = self.node.path_building_key # hide the key from operations
+
 
     def listen (self, ipaddress, udpport):    
         # NOTE: DHT and crypto perhaps should go in the constructor
@@ -94,6 +103,7 @@ class Server:
                         
                         # Send a setup message to the first node in the path
                         target_node = path[1]
+                        log.debug("len of package:"+str(len(pkgs[0]))+" dest:"+str(target_node.port))
                         sock.sendto(pkgs[0], (target_node.ip_addr, target_node.port))
                         
                     if data[0] == 'open':
@@ -120,9 +130,18 @@ class Server:
     def handle_udp (self, sock, fifo):
         # Decide what to do with the packet:
         (data, addr) = sock.recvfrom(1024)
-        log.debug("UDP "+str(addr)+": "+data)
+        log.debug("UDP addr:"+str(addr)+" len:"+str(len(data))+": "+data)
         
-        # NOTE: We may not get all the info for a setup packet as they are maybe 2400 bytes long!
+        # Assume we are receiving a setup package for now
+        # NOTE: We may not get all the info for a setup packet as they are >= 498 bytes long!
+        
+        if addr not in self.setup_peers:
+            peer_path_building_cert = data[0:64]
+            # public_box = crypto_factory.public_box(peer_path_building_cert)
+            # message = public_box.decrypt(data[64:]) # try this
+            # sha256()
+            print message
+        
                
     def handle_udp_old (self, sock, fifo):
         # Deprecated old version, don't delete yet!

@@ -225,6 +225,10 @@ class RoutingPath:
         pkg_data,hash_data = [], []
 
         chksum = pkgs[0:64]
+        
+        if not chksum == sha256(pkgs[64:]):
+            raise Exception("Checksum does not match")
+        
         cert_hex = pkgs[64:128]
         path_length = int(pkgs[128:130])
         pkg_size = int(pkgs[130:134])

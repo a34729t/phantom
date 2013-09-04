@@ -75,8 +75,25 @@ def test_setup_package_creation_and_read_round1():
     plaintext = box.decrypt(pkg_encrypted)
     assert pkg_plaintext == plaintext
 
+def verify_path_node_links():
+    # Verify the nodes in the new routing path are linked correctly
+    # i.e. node_0 -> conn_id_0_1 -> node_1 -> conn_id_1_2 -> node_2 ...
+    
+    a = Server('A')
+    path = RoutingPath(a.node, a.dht, a.crypto, 3)
+    for i in range(1, len(path.nodes)):
+        prev = path.nodes[i-1]
+        next = path.nodes[i]
+        assert prev.next_id == next.prev_id
+        assert next.prev_ip_addr == prev.ip_addr
+        assert prev.next_ip_addr == next.ip_addr
+        assert prev.next_port == next.port
+        assert prev.next_path_building_cert_hex == next.path_building_cert_hex
+        assert next.prev_path_building_cert_hex == prev.path_building_cert_hex
+        assert next.path_construction_cert_hex == path.path_construction_cert_hex
 
-def test_routing_path():
+
+def verify_target_node_can_decrypt_setup_package_round1():
     a = Server('A')
     b = Server('B')
     
@@ -90,19 +107,6 @@ def test_routing_path():
                 target_node = node
                 break
         if target_node: break
-    
-    # Verify the nodes in the new routing path are linked correctly
-    # i.e. node_0 -> conn_id_0_1 -> node_1 -> conn_id_1_2 -> node_2 ...
-    for i in range(1, len(path.nodes)):
-        prev = path.nodes[i-1]
-        next = path.nodes[i]
-        assert prev.next_id == next.prev_id
-        assert next.prev_ip_addr == prev.ip_addr
-        assert prev.next_ip_addr == next.ip_addr
-        assert prev.next_port == next.port
-        assert prev.next_path_building_cert_hex == next.path_building_cert_hex
-        assert next.prev_path_building_cert_hex == prev.path_building_cert_hex
-        assert next.path_construction_cert_hex == path.path_construction_cert_hex
 
     # Create round 1 setup packages (shuffled array)
     encrypted_pkg_str = path.round1_setup_packages()
@@ -110,13 +114,17 @@ def test_routing_path():
     # Now, we pretend to be the first node!
     # Verify the 1st setup package is correct (assume rest are also correct)    
     box, plaintext = RoutingPath.round1_setup_packages_decode(encrypted_pkg_str, b.crypto)
-
     assert plaintext == target_node.round1_setup_package()
     
-    
+def test_routing_path_round1():
+    test_setup_package_creation_and_read_round1()
+    verify_path_node_links()
+    verify_target_node_can_decrypt_setup_package_round1()
+    # TODO: Test hash mismatch exception
+    # TODO: Test bad checksum exception
     # TODO: Verify dummy packages
+    
     
 test_dht()
 test_crypto_factory()
-test_setup_package_creation_and_read_round1()
-test_routing_path()
+test_routing_path_round1()

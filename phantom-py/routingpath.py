@@ -226,7 +226,7 @@ class RoutingPath:
 
         chksum = pkgs[0:64]
         
-        if not chksum == sha256(pkgs[64:]):
+        if chksum_test and (not chksum == sha256(pkgs[64:])):
             raise Exception("Checksum does not match")
         
         cert_hex = pkgs[64:128]

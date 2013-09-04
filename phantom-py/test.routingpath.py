@@ -124,14 +124,15 @@ def test_round1_exceptions():
     path = RoutingPath(a.node, a.dht, a.crypto, 3)
     encrypted_pkg_str = path.round1_setup_packages()
     if encrypted_pkg_str[128] != 'x':
-        encrypted_pkg_str[128] = 'x'
+        encrypted_pkg_str = encrypted_pkg_str[0:128] + 'x' + encrypted_pkg_str[129:]
     else:
-        encrypted_pkg_str[128] = 'y'
+        encrypted_pkg_str = encrypted_pkg_str[0:128] + 'y' + encrypted_pkg_str[129:]
         
     try:
         box, plaintext = RoutingPath.round1_setup_packages_decode(encrypted_pkg_str, b.crypto)
+        assert 1 == 0
     except:
-        print "!!!"
+        pass
         
     
     
@@ -140,8 +141,6 @@ def test_routing_path_round1():
     verify_path_node_links()
     verify_target_node_can_decrypt_setup_package_round1()
     test_round1_exceptions()
-    
-    # TODO: Test bad checksum exception
     # TODO: Verify dummy packages
     
     

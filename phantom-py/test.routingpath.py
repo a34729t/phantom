@@ -116,11 +116,31 @@ def verify_target_node_can_decrypt_setup_package_round1():
     box, plaintext = RoutingPath.round1_setup_packages_decode(encrypted_pkg_str, b.crypto)
     assert plaintext == target_node.round1_setup_package()
     
+def test_round1_exceptions():
+    # Change a char in the message and make sure there is an exception
+    # TODO: Test hash mismatch exception - checksum error should get this too
+    a = Server('A')
+    b = Server('B')
+    path = RoutingPath(a.node, a.dht, a.crypto, 3)
+    encrypted_pkg_str = path.round1_setup_packages()
+    if encrypted_pkg_str[128] != 'x':
+        encrypted_pkg_str[128] = 'x'
+    else:
+        encrypted_pkg_str[128] = 'y'
+        
+    try:
+        box, plaintext = RoutingPath.round1_setup_packages_decode(encrypted_pkg_str, b.crypto)
+    except:
+        print "!!!"
+        
+    
+    
 def test_routing_path_round1():
     test_setup_package_creation_and_read_round1()
     verify_path_node_links()
     verify_target_node_can_decrypt_setup_package_round1()
-    # TODO: Test hash mismatch exception
+    test_round1_exceptions()
+    
     # TODO: Test bad checksum exception
     # TODO: Verify dummy packages
     

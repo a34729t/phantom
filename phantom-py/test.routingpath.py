@@ -90,8 +90,6 @@ def test_routing_path():
                 target_node = node
                 break
         if target_node: break
-        
-    print "path:", [node.name for node in path]      
     
     # Verify the nodes in the new routing path are linked correctly
     # i.e. node_0 -> conn_id_0_1 -> node_1 -> conn_id_1_2 -> node_2 ...

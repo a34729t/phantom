@@ -177,6 +177,7 @@ class RoutingPath:
             
             h = node.box.encryptn(sha256(s))
             hashes.append(h)
+
         shuffle(hashes)
         
         # Format:
@@ -242,6 +243,7 @@ class RoutingPath:
 
         # Attempt to decrypt the packages (and calculate the hash on other
         # encrypted packages) and decrypt the hashes one by one
+        i = 0
         for pkg in pkg_data:
             try:
                 plaintext = box.decrypt(pkg)
@@ -254,18 +256,15 @@ class RoutingPath:
                 break
             except:
                 pass
+            i += 1
                 
         for h in hash_data:
             try:
                  hash_pkgs = box.decrypt(h)
                  break
             except:
-                pass    
-
-        print "plaintext", plaintext
-        print "h_target", h_target
-        print "hash_pkgs", hash_pkgs
-
+                pass
+        
         if hash_pkgs == h_target:
             return box, plaintext
         else:

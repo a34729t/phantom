@@ -51,6 +51,8 @@ class Node:
         
         # TODO: Generate seeds and tuples
         
+        # We generate a public box in the round1 setup
+        
     def __repr__(self):
         return str(self)
         
@@ -81,10 +83,11 @@ class Node:
         s += pack("<64s", sha256(s)) # append the hash of the decrypted package
             
         # TODO: Pack seeds and tuples
-        
         return s
 
     def encrypt_and_sign(self, message, signing_key):
+        # deprecated, do not need (for now)
+        
         # print "!!encrypt_and_sign!!"
         # Encrypt the setup package:
         # 1) Asymmetrically encrypt with the path building certificate of the individual recipient node
@@ -110,13 +113,14 @@ class Node:
         
         
 class RoutingPath:
-    def __init__(self, my_node, dht, length):
+    def __init__(self, my_node, dht, crypto, length):
         self.my_node = my_node
         x_and_y_nodes = dht.get_x_and_y_nodes(my_node, 1, 2)
         self.nodes = [my_node] + x_and_y_nodes + [my_node]
         self.length = length
         
         # Generate a signing key
+        # NOTE: Where the hell do I use this?
         self.path_construction_key = nacl.signing.SigningKey.generate()
         self.path_construction_cert = self.path_construction_key.verify_key
         self.path_construction_cert_hex = \
@@ -137,6 +141,10 @@ class RoutingPath:
             prev.next_port = next.port
             prev.next_path_building_cert_hex = next.path_building_cert_hex
             next.prev_path_building_cert_hex = prev.path_building_cert_hex
+            
+        # Create cryptographic boxes for nodes
+        for node in self.nodes[1:-1]:
+            node.box = crypto.public_box(node.path_building_cert)
         
     def __repr__(self):
         pass
@@ -149,14 +157,15 @@ class RoutingPath:
         pkgs_and_nodes = []
         for node in self.nodes[1:-1]:
             pkg = node.round1_setup_package()
-            pkg_encrypted = node.encrypt_and_sign(pkg, self.path_construction_key)
+            pkg_encrypted = node.box.encryptn(pkg)
+            # pkg_encrypted = node.encrypt_and_sign(pkg, self.path_construction_key)
             pkgs_and_nodes.append( (node, pkg_encrypted)) # append the node so we know the proper crypto keys
-        
+            
         # Shuffle the order of the setup packages
         shuffle(pkgs_and_nodes)
         pkgs = [x[1] for x in pkgs_and_nodes] # separate out pkgs
         
-        # compute hash on (array - package) for each package
+        # compute hash on (array - package) for each package (and shuffle)
         hashes = []
         for i in range(len(pkgs_and_nodes)):
             node = pkgs_and_nodes[i][0]
@@ -166,25 +175,99 @@ class RoutingPath:
             else:
                 s = ''.join(pkgs[0:i]+pkgs[i+1:])
             
-            h = node.encrypt_and_sign(sha256(s), self.path_construction_key)
+            h = node.box.encryptn(sha256(s))
             hashes.append(h)
-        
-        # shuffle order of hashes and packages
         shuffle(hashes)
         
-        # return pkgs
-        return pkgs + hashes
+        # Format:
+        # 0) 64 byte transmission checksum
+        # 1) 64 byte cert (hex)
+        # 2) 2 byte path length (N) 
+        # 3) 4 byte package length (X)
+        # 4) 4 byte hash length (Y)
+        # 5) N packages of length X
+        # 6) N packages of length Y
+        
+        # 1)
+        pkg_str = self.my_node.path_building_cert_hex 
+        
+        # 2)
+        s = str(self.length)
+        while len(s) < 2: s = '0' + s
+        pkg_str += s
+        
+        # 3)
+        s = str(len(pkgs[0]))
+        while len(s) < 4: s = '0' + s
+        pkg_str += s
+        
+        # 4)
+        s = str(len(hashes[0]))
+        while len(s) < 4: s = '0' + s
+        pkg_str += s
+        
+        # 5 and 6)
+        for pkg in pkgs: pkg_str += pkg
+        for h in hashes: pkg_str += h
+        
+        # 0)
+        out = sha256(pkg_str) + pkg_str
+        return out
+        
+    @staticmethod
+    def round1_setup_packages_decode(pkgs, crypto):
+        # Break apart the received setup package packet per the above method
+        # and return the unencrypted data along with the cryptographic box
+        # to perform this again
+        plaintext, hash_pkgs, h_target = None, -1, -2
+        box = None
+        pkg_data,hash_data = [], []
 
+        chksum = pkgs[0:64]
+        cert_hex = pkgs[64:128]
+        path_length = int(pkgs[128:130])
+        pkg_size = int(pkgs[130:134])
+        hash_size = int(pkgs[134:138])
+        
+        # Create a box
+        box = crypto.public_box(PrivateKey(cert_hex, encoder=nacl.encoding.HexEncoder))
+        
+        # Now get the packages and hashes
+        hash_start = 138+(path_length*pkg_size)
+        for i in range(path_length):
+            pkg_i = pkgs[138+(i*pkg_size):138+((i+1)*pkg_size)]
+            hash_i = pkgs[hash_start+(i*hash_size):hash_start+((i+1)*hash_size)]
+            pkg_data.append(pkg_i)
+            hash_data.append(hash_i)
 
+        # Attempt to decrypt the packages (and calculate the hash on other
+        # encrypted packages) and decrypt the hashes one by one
+        for pkg in pkg_data:
+            try:
+                plaintext = box.decrypt(pkg)
+                s = None
+                if i == path_length - 1:
+                    s = ''.join(pkg_data[0:i])
+                else:
+                    s = ''.join(pkg_data[0:i]+pkg_data[i+1:path_length])
+                h_target = sha256(s)
+                break
+            except:
+                pass
+                
+        for h in hash_data:
+            try:
+                 hash_pkgs = box.decrypt(h)
+                 break
+            except:
+                pass    
 
+        print "plaintext", plaintext
+        print "h_target", h_target
+        print "hash_pkgs", hash_pkgs
 
-
-
-
-
-
-
-
-
-
-
+        if hash_pkgs == h_target:
+            return box, plaintext
+        else:
+            raise Exception("Hashes do not match")
+    

@@ -116,9 +116,8 @@ def verify_target_node_can_decrypt_setup_package_round1():
     box, plaintext = RoutingPath.round1_setup_packages_decode(encrypted_pkg_str, b.crypto)
     assert plaintext == target_node.round1_setup_package()
     
-def test_round1_exceptions():
+def test_round1_chksum_exception():
     # Change a char in the message and make sure there is an exception
-    # TODO: Test hash mismatch exception - checksum error should get this too
     a = Server('A')
     b = Server('B')
     path = RoutingPath(a.node, a.dht, a.crypto, 3)
@@ -134,15 +133,29 @@ def test_round1_exceptions():
     except:
         pass
         
-    
+def test_round1_hash_mismatch_exception():
+    a = Server('A')
+    b = Server('B')
+    path = RoutingPath(a.node, a.dht, a.crypto, 3)
+    encrypted_pkg_str = path.round1_setup_packages()
+    if encrypted_pkg_str[256] != 'x':
+        encrypted_pkg_str = encrypted_pkg_str[0:256] + 'x' + encrypted_pkg_str[257:]
+    else:
+        encrypted_pkg_str = encrypted_pkg_str[0:256] + 'y' + encrypted_pkg_str[257:]
+        
+    try:
+        box, plaintext = RoutingPath.round1_setup_packages_decode(encrypted_pkg_str, b.crypto, False)
+        assert 1 == 0
+    except:
+        pass
     
 def test_routing_path_round1():
     test_setup_package_creation_and_read_round1()
     verify_path_node_links()
     verify_target_node_can_decrypt_setup_package_round1()
-    test_round1_exceptions()
+    test_round1_chksum_exception()
+    test_round1_hash_mismatch_exception()
     # TODO: Verify dummy packages
-    
     
 test_dht()
 test_crypto_factory()

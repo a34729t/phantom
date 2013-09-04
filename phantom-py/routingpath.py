@@ -216,7 +216,7 @@ class RoutingPath:
         return out
         
     @staticmethod
-    def round1_setup_packages_decode(pkgs, crypto):
+    def round1_setup_packages_decode(pkgs, crypto, chksum_test=True):
         # Break apart the received setup package packet per the above method
         # and return the unencrypted data along with the cryptographic box
         # to perform this again

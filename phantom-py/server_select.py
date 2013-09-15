@@ -7,9 +7,7 @@ from multiprocessing import Process, Pipe
 from server_datatypes import SetupInfo, TunnelInfo
 import os
 import logging
-
-from routingpath import RoutingPath, Node, NodeTypes
-from crypto_factory import CryptoFactory
+from listener import UDPListener, TCPListener
 from dht import FakeDHT
 
 log = logging.getLogger("mylog")
@@ -38,37 +36,26 @@ class Server:
     def __init__(self, name, pipe=None, pipe_test=None):
         dht_file = 'fake_dht.json'
         self.pipe = pipe
-        self.crypto = CryptoFactory()
+        self.pipe_test = pipe_test
+        
         self.dht = FakeDHT(dht_file)
         self.node = self.dht.get_node(name) # The node represented by the server
-        self.crypto.path_building_key = self.node.path_building_key # hide the key from operations
+        
+
+        # hashes to hold info on peers
+        self.setup_peers = {}
 
 
     def listen (self, ipaddress, udpport):    
-        # NOTE: DHT and crypto perhaps should go in the constructor
         
-        # Initialize the DHT and get the information for my node 
-        # in the Phantom network
-        dht_file = 'fake_dht.json'
-        dht = FakeDHT(dht_file)
-        my_node = dht.get_node(self.name)
         if not udpport:
-            udpport = my_node.port
+            udpport = self.node.port
         
-        # Initialize crypto factory
-        crypto_factory = CryptoFactory()
-        crypto_factory.path_building_key = my_node.path_building_key
-        
-        # Set some class vars
-        self.address = ipaddress
-    
-        # Initialize listening non-blocking UDP socket
-        sock = socket(AF_INET, SOCK_DGRAM)
-        sock.setblocking(0)
-        sock.bind((ipaddress, udpport))
+        #udp_listener = UDPListener((ipaddress, udpport), self.dht, self.node)
+        listener = TCPListener((ipaddress, udpport), self.dht, self.node)
         
         # Main loop
-        inputs = [sock, self.pipe] # stuff we read
+        inputs = [listener.sock, self.pipe] # stuff we read
         outputs = [] # stuff we expect to write
         
         # Set up the named pipe that we use to simulate the TUN interface
@@ -84,35 +71,33 @@ class Server:
             readable, writable, exceptional = select.select(inputs, outputs, inputs)
             
             for event in readable:
+                print "select(event) type:", type(event)
+                
+                # IPC
                 if fifo and event is fifo:
                     # Handle data from test harness simulating TUN (via pipe)
                     self.handle_fifo(sock, fifo)
-                if event is sock:
-                    # Handle tunnel/setup request data
-                    self.handle_udp(sock, fifo)
-                if event is self.pipe:
+                elif event is self.pipe:
                     # Handle commands from the UI in the other process (IPC)
                     data = self.pipe.recv()
                     log.debug("pipe event: "+str(data))
                     if data == 'path':
                         # Attempt to create a routing path
-                        # NOTE: At this point we just create the first round setup packages
-                        path = RoutingPath(my_node, dht)
-                        pkgs = path.round1_setup_packages()
-                        log.debug("Creating path with nodes:"+str(path.nodes))
-                        
-                        # Send a setup message to the first node in the path
-                        target_node = path[1]
-                        log.debug("len of package:"+str(len(pkgs[0]))+" dest:"+str(target_node.port))
-                        sock.sendto(pkgs[0], (target_node.ip_addr, target_node.port))
-                        
-                    if data[0] == 'open':
-                        # NOTE: For open command, data[1] and data[2] are
-                        # an IP address and port, respectively
-                        connId = os.urandom(16).encode('hex')
-                        msg = connId + 'setup'
-                        sock.sendto(msg, (data[1], data[2]))
-                        self.setup_peers[connId] = SetupInfo(data[1], data[2])
+                        listener.setup_round_1()
+                
+                # Phantom network and Adverseries
+                elif event is listener.sock: # Incoming request
+                    # 1) Handle tunnel/setup request data
+                    # 2) Process tunnel data (udp)
+                    listener.handle_incoming(inputs)
+                else:
+                    # Handle individual connections (such as TCP, but never UDP)
+                    listener.handle_conn_data(event, inputs)
+                    
+                    # TODO: Problem is that I'm somehow getting this
+                    # event is <type '_multiprocessing.Connection'>
+                    # instead of a regular socket connection (is it the pipe?)
+                    
             
             # Handle exceptional?    
     
@@ -126,63 +111,3 @@ class Server:
             peer = self.tunnels[peerId]
             msg = peerId + data
             sock.sendto(msg, (peer.address, peer.port))
-
-    def handle_udp (self, sock, fifo):
-        # Decide what to do with the packet:
-        (data, addr) = sock.recvfrom(1024)
-        log.debug("UDP addr:"+str(addr)+" len:"+str(len(data))+": "+data)
-        
-        # Assume we are receiving a setup package for now
-        # NOTE: We may not get all the info for a setup packet as they are >= 498 bytes long!
-        
-        if addr not in self.setup_peers:
-            peer_path_building_cert = data[0:64]
-            # public_box = crypto_factory.public_box(peer_path_building_cert)
-            # message = public_box.decrypt(data[64:]) # try this
-            # sha256()
-            print message
-        
-               
-    def handle_udp_old (self, sock, fifo):
-        # Deprecated old version, don't delete yet!
-        # Decide what to do with the packet:
-        (data, addr) = sock.recvfrom(1024)
-        log.debug("UDP "+str(addr)+": "+data)
-        
-        # NOTE: Once I've gotten the test harness working and have the tunnel
-        # routing working, describe the packet handling decisions in more
-        # detail.
-        
-        # check if valid packet
-        peerId = None
-        try:
-            peerId = data[0:32]
-            data = data[32:len(data)]
-            if len(data) < 3:
-                return # bad packet, too short
-        except:
-            return # bad packet
-
-        # Handle the various cases
-        if peerId in self.setup_peers: # We see a continued setup packet
-            log.debug("packet received from peer in setup_peers!")
-            if data == 'acksetup':
-                # Consider as active peer
-                peer = self.setup_peers[peerId]
-                self.tunnels[peerId] = TunnelInfo(peer.address, peer.port)
-                del self.setup_peers[peerId]
-            return
-        elif peerId in self.tunnels: # We are functioning as a relay for this node
-            # NOTE: This is where TUN interface forwarding would happen
-            log.debug("tunnel data: "+str(data))
-            if fifo:
-                log.debug("...writing out to fifo!"+str(data))
-                os.write(fifo, data)
-            return
-        else: # New peer
-            log.debug("new peer")
-            if data == "setup":
-                msg = peerId + 'acksetup'
-                self.tunnels[peerId] = TunnelInfo(addr[0], addr[1])
-                sock.sendto(msg, addr)
-                log.debug("setup packet")
